@@ -168,6 +168,188 @@ void DrawPieces(Texture2D textures[13], int board[][8], int width, int height, R
 
 }
 
+bool IsValidMove(int board[][8], int fromX, int fromY, int toX, int toY, int player_turn) {
+    // Ensure the source and destination are within the board boundaries
+    if (fromX < 0 || fromX > 7 || fromY < 0 || fromY > 7 || toX < 0 || toX > 7 || toY < 0 || toY > 7)
+        return false; // Out of bounds
+
+    int pieceAtFrom = board[fromY][fromX];
+    int pieceAtTo = board[toY][toX];
+
+    // Check if it's the player's piece
+    if ((player_turn == 0 && pieceAtFrom < 7) || (player_turn == 1 && pieceAtFrom > 6))
+        return false;
+
+    // Check if the destination is occupied by the player's own piece
+    if ((player_turn == 0 && pieceAtTo >= 1 && pieceAtTo <= 6) || (player_turn == 1 && pieceAtTo >= 7 && pieceAtTo <= 12))
+        return false;
+
+    // Check specific piece movement rules
+    switch (pieceAtFrom) {
+        case WHITEPAWN:
+            // White pawn moves forward
+            if (player_turn == 0 && fromX == toX && toY == fromY - 1 && pieceAtTo == EMPTY)
+                return true;
+            // White pawn initial double move
+            if (player_turn == 0 && fromX == toX && toY == fromY - 2 && fromY == 6 && pieceAtTo == EMPTY && board[fromY - 1][fromX] == EMPTY)
+                return true;
+            // White pawn captures
+            if (player_turn == 0 && abs(toX - fromX) == 1 && toY == fromY - 1 && pieceAtTo >= 7 && pieceAtTo <= 12)
+                return true;
+            break;
+        case BLACKPAWN:
+            // Black pawn moves forward
+            if (player_turn == 1 && fromX == toX && toY == fromY + 1 && pieceAtTo == EMPTY)
+                return true;
+            // Black pawn initial double move
+            if (player_turn == 1 && fromX == toX && toY == fromY + 2 && fromY == 1 && pieceAtTo == EMPTY && board[fromY + 1][fromX] == EMPTY)
+                return true;
+            // Black pawn captures
+            if (player_turn == 1 && abs(toX - fromX) == 1 && toY == fromY + 1 && pieceAtTo >= 1 && pieceAtTo <= 6)
+                return true;
+            break;
+        case WHITEKNIGHT:
+        case BLACKKNIGHT:
+            // Knights move in an L shape
+            if ((abs(toX - fromX) == 1 && abs(toY - fromY) == 2) || (abs(toX - fromX) == 2 && abs(toY - fromY) == 1))
+                return true;
+            break;
+        case WHITEBISHOP:
+        case BLACKBISHOP:
+            // Bishops move diagonally
+            if (abs(toX - fromX) == abs(toY - fromY)) {
+                int deltaX = (toX - fromX > 0) ? 1 : -1;
+                int deltaY = (toY - fromY > 0) ? 1 : -1;
+                int x = fromX + deltaX;
+                int y = fromY + deltaY;
+                while (x != toX && y != toY) {
+                    if (board[y][x] != EMPTY)
+                        return false; // Path is blocked
+                    x += deltaX;
+                    y += deltaY;
+                }
+                return true;
+            }
+            break;
+        case WHITEROOK:
+        case BLACKROOK:
+            // Rooks move horizontally or vertically
+            if ((fromX == toX && fromY != toY) || (fromX != toX && fromY == toY)) {
+                int delta;
+                if (fromX == toX)
+                    delta = (toY - fromY > 0) ? 1 : -1;
+                else
+                    delta = (toX - fromX > 0) ? 1 : -1;
+                if (fromX == toX) {
+                    int y = fromY + delta;
+                    while (y != toY) {
+                        if (board[y][fromX] != EMPTY)
+                            return false; // Path is blocked
+                        y += delta;
+                    }
+                } else {
+                    int x = fromX + delta;
+                    while (x != toX) {
+                        if (board[fromY][x] != EMPTY)
+                            return false; // Path is blocked
+                        x += delta;
+                    }
+                }
+                return true;
+            }
+            break;
+        case WHITEQUEEN:
+        case BLACKQUEEN:
+            // Queens can move like bishops or rooks
+            if (abs(toX - fromX) == abs(toY - fromY)) {
+                // Check diagonal movement
+                int deltaX = (toX - fromX > 0) ? 1 : -1;
+                int deltaY = (toY - fromY > 0) ? 1 : -1;
+                int x = fromX + deltaX;
+                int y = fromY + deltaY;
+                while (x != toX && y != toY) {
+                    if (board[y][x] != EMPTY)
+                        return false; // Path is blocked
+                    x += deltaX;
+                    y += deltaY;
+                }
+                return true;
+            } else if ((fromX == toX && fromY != toY) || (fromX != toX && fromY == toY)) {
+                // Check horizontal or vertical movement
+                int delta;
+                if (fromX == toX)
+                    delta = (toY - fromY > 0) ? 1 : -1;
+                else
+                    delta = (toX - fromX > 0) ? 1 : -1;
+                if (fromX == toX) {
+                    int y = fromY + delta;
+                    while (y != toY) {
+                        if (board[y][fromX] != EMPTY)
+                            return false; // Path is blocked
+                        y += delta;
+                    }
+                } else {
+                    int x = fromX + delta;
+                    while (x != toX) {
+                        if (board[fromY][x] != EMPTY)
+                            return false; // Path is blocked
+                        x += delta;
+                    }
+                }
+                return true;
+            }
+            break;
+        case WHITEKING:
+        case BLACKKING:
+            // Kings can move one square in any direction
+            if (abs(toX - fromX) <= 1 && abs(toY - fromY) <= 1)
+                return true;
+            break;
+    }
+
+    return false; // Invalid move by default
+}
+
+bool IsCheck(int board[][8], int player_turn) {
+    int kingX = -1, kingY = -1;
+
+    // Find the king's position
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            int piece = board[y][x];
+            if ((player_turn == 0 && piece == WHITEKING) || (player_turn == 1 && piece == BLACKKING)) {
+                kingX = x;
+                kingY = y;
+                break;
+            }
+        }
+        if (kingX != -1)
+            break;
+    }
+
+    if (kingX == -1 || kingY == -1) {
+        // Couldn't find the king, this shouldn't happen
+        return false;
+    }
+
+    // Check if any opponent's piece can attack the king
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            int piece = board[y][x];
+            if ((player_turn == 0 && piece >= BLACKPAWN && piece <= BLACKKING) || (player_turn == 1 && piece >= WHITEPAWN && piece <= WHITEKING)) {
+                // This is an opponent's piece
+                if (IsValidMove(board, x, y, kingX, kingY, (player_turn == 0) ? 1 : 0)) {
+                    // The opponent's piece can attack the king
+                    return true;
+                }
+            }
+        }
+    }
+
+    // No opponent's piece can attack the king
+    return false;
+}
+
 int main () {
     /* Initalize variables and Window */
     int screenWidth = 1920;
@@ -201,22 +383,39 @@ int main () {
     
     Color ChessGreen = {0x76, 0x86, 0x56, 0xff};
     Color ChessBrown = {0xee, 0xee, 0xd2, 0xff};
+    Color ChessBackground = {0x5C, 0x40, 0x33, 0xff};
 
     int player_turn = 0; // 0= white, 1 = black
     bool piece_selected = false; 
-
+    int selectedSquare[2]= {-1,-1};
 
     /* Main Game Loop */
     while (WindowShouldClose() == false){
 
         if (!piece_selected && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-            int square[2]= {-1,-1};
-            FindIndex(screenWidth, screenHeight, GetMousePosition(), square);
-            printf("X: %d, Y: %d\n", square[0],square[1]);
+            FindIndex(screenWidth, screenHeight, GetMousePosition(), selectedSquare);
+            printf("X: %d, Y: %d\n", selectedSquare[0],selectedSquare[1]);
+            piece_selected = true;
         }
+        else if (piece_selected && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
+            int destSquare[2] = {-1, -1};
+            FindIndex(screenWidth, screenHeight, GetMousePosition(), destSquare);
+            if (IsValidMove(myBoard.arr_board, selectedSquare[0], selectedSquare[1], destSquare[0], destSquare[1], player_turn)){
+                myBoard.arr_board[destSquare[1]][destSquare[0]] = myBoard.arr_board[selectedSquare[1]][selectedSquare[0]];
+                myBoard.arr_board[selectedSquare[1]][selectedSquare[0]] = EMPTY;
 
+                if (IsCheck(myBoard.arr_board, player_turn)){
+                    printf("Checkmate!\n");
+                }
+
+                player_turn = (player_turn) == 0 ? 1 :0;
+                myBoard.print_board();
+            }
+            
+            piece_selected = false;
+        }
         BeginDrawing();
-        ClearBackground(BLACK);
+        ClearBackground(ChessBackground);
         
         DrawBoard(screenWidth, screenHeight, ChessGreen, ChessBrown);
         DrawPieces(textures, myBoard.arr_board, screenWidth, screenHeight, source);
