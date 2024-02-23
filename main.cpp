@@ -352,8 +352,8 @@ bool IsCheck(int board[][8], int player_turn) {
 
 int main () {
     /* Initalize variables and Window */
-    int screenWidth = 1920;
-    int screenHeight = 1080;
+    int screenWidth = 600;
+    int screenHeight = 600;
 
     InitWindow(screenWidth, screenHeight, "CHASE CHESS");
     SetTargetFPS(60);
