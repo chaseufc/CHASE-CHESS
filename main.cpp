@@ -101,13 +101,20 @@ void DrawBoard(int width, int height, Color white, Color black){
     return;
 }
 
-void DrawPieces(Texture2D textures[13], int board[][8], int width, int height, Rectangle source){
+void DrawPieces(Texture2D textures[13], int board[][8], int width, int height, Rectangle source, int square[2], int prevMove[4]){
     /* Draws pieces onto a chess board of width and height 
     Texture2D textures - an array of chess image textures where the array index is the same as the declaration for the piece
     int width - width of board
     int height - height of board
     Rectangle source - rectangle that represents the size of the texture file
     returns - void          */
+    if (square[0] != -1 && square[1] != -1){
+        DrawRectangle((0.1f)*width+square[0]*(0.1f)*width,(0.1f)*height+(7-square[1])*(0.1f)*height,(0.1f)*width, 0.1f*height, {0xff,0x00,0x00,0x80});
+    }
+    if (prevMove[0] != -1 && prevMove[1] != -1 && prevMove[2] != -1 && prevMove[3] != -1){
+        DrawRectangle((0.1f)*width+prevMove[0]*(0.1f)*width,(0.1f)*height+(7-prevMove[1])*(0.1f)*height,(0.1f)*width, 0.1f*height, {0xff,0x00,0x00,0x80});
+        DrawRectangle((0.1f)*width+prevMove[2]*(0.1f)*width,(0.1f)*height+(7-prevMove[3])*(0.1f)*height,(0.1f)*width, 0.1f*height, {0xff,0x00,0x00,0x80});
+    }
     for (int i=0; i<8; i++){
         for (int j=0; j<8; j++){
 
@@ -170,49 +177,69 @@ void DrawPieces(Texture2D textures[13], int board[][8], int width, int height, R
 
 bool IsValidMove(int board[][8], int fromX, int fromY, int toX, int toY, int player_turn) {
     // Ensure the source and destination are within the board boundaries
-    if (fromX < 0 || fromX > 7 || fromY < 0 || fromY > 7 || toX < 0 || toX > 7 || toY < 0 || toY > 7)
+    printf("Checking move from (%d, %d) to (%d, %d)\n", fromX, fromY, toX, toY);
+    printf("Player turn: %d\n", player_turn);
+    if (fromX < 0 || fromX > 7 || fromY < 0 || fromY > 7 || toX < 0 || toX > 7 || toY < 0 || toY > 7){
+        printf("Exit 1\n");
         return false; // Out of bounds
-
+    }
     int pieceAtFrom = board[fromY][fromX];
     int pieceAtTo = board[toY][toX];
+    printf("Piece at from: %d, piece At to: %d", pieceAtFrom, pieceAtTo);
 
     // Check if it's the player's piece
-    if ((player_turn == 0 && pieceAtFrom < 7) || (player_turn == 1 && pieceAtFrom > 6))
+    if ((player_turn == 0 && pieceAtFrom >6 ) || (player_turn == 1 && pieceAtFrom < 7 ) || (pieceAtFrom == 0)){
+        printf("Exit 2\n");
         return false;
-
+    }
     // Check if the destination is occupied by the player's own piece
-    if ((player_turn == 0 && pieceAtTo >= 1 && pieceAtTo <= 6) || (player_turn == 1 && pieceAtTo >= 7 && pieceAtTo <= 12))
+    if ((player_turn == 0 && pieceAtTo >= 1 && pieceAtTo <= 6) || (player_turn == 1 && pieceAtTo >= 7 && pieceAtTo <= 12)){
+        printf("Exit 2.5\n");
         return false;
-
+    }
     // Check specific piece movement rules
     switch (pieceAtFrom) {
         case WHITEPAWN:
             // White pawn moves forward
-            if (player_turn == 0 && fromX == toX && toY == fromY - 1 && pieceAtTo == EMPTY)
+            if ((player_turn == 0) && (fromX == toX) && (toY == fromY + 1) && pieceAtTo == EMPTY){
+                printf("Exit 3\n");
                 return true;
+            }
             // White pawn initial double move
-            if (player_turn == 0 && fromX == toX && toY == fromY - 2 && fromY == 6 && pieceAtTo == EMPTY && board[fromY - 1][fromX] == EMPTY)
+            if ((player_turn == 0) && (fromX == toX) && (toY == fromY + 2) && (fromY == 1) && (pieceAtTo == EMPTY) && board[fromY + 1][fromX] == EMPTY){
+                printf("Exit 4\n");
                 return true;
+            }
             // White pawn captures
-            if (player_turn == 0 && abs(toX - fromX) == 1 && toY == fromY - 1 && pieceAtTo >= 7 && pieceAtTo <= 12)
+            if ((player_turn == 0) && (abs(toX - fromX) == 1) && (toY == fromY + 1) && (pieceAtTo >= 7) && (pieceAtTo <= 12)){
+                printf("Exit 5\n");
                 return true;
+            }
             break;
         case BLACKPAWN:
             // Black pawn moves forward
-            if (player_turn == 1 && fromX == toX && toY == fromY + 1 && pieceAtTo == EMPTY)
+            if ((player_turn == 1) && (fromX == toX) && (toY == fromY - 1) && pieceAtTo == EMPTY){
+                printf("Exit 6\n");
                 return true;
+            }
             // Black pawn initial double move
-            if (player_turn == 1 && fromX == toX && toY == fromY + 2 && fromY == 1 && pieceAtTo == EMPTY && board[fromY + 1][fromX] == EMPTY)
+            if ((player_turn == 1) && (fromX == toX) && (toY == fromY -2) && (fromY == 6) && (pieceAtTo == EMPTY) && board[fromY - 1][fromX] == EMPTY){
+                printf("Exit 7\n");
                 return true;
+            }
             // Black pawn captures
-            if (player_turn == 1 && abs(toX - fromX) == 1 && toY == fromY + 1 && pieceAtTo >= 1 && pieceAtTo <= 6)
+            if (player_turn == 1 && abs(toX - fromX) == 1 && toY == fromY - 1 && pieceAtTo >= 1 && pieceAtTo <= 6){
+                printf("Exit 8\n");
                 return true;
+            }
             break;
         case WHITEKNIGHT:
         case BLACKKNIGHT:
             // Knights move in an L shape
-            if ((abs(toX - fromX) == 1 && abs(toY - fromY) == 2) || (abs(toX - fromX) == 2 && abs(toY - fromY) == 1))
+            if ((abs(toX - fromX) == 1 && abs(toY - fromY) == 2) || (abs(toX - fromX) == 2 && abs(toY - fromY) == 1)){
+                printf("Exit 9\n");
                 return true;
+            }
             break;
         case WHITEBISHOP:
         case BLACKBISHOP:
@@ -228,6 +255,7 @@ bool IsValidMove(int board[][8], int fromX, int fromY, int toX, int toY, int pla
                     x += deltaX;
                     y += deltaY;
                 }
+                printf("Exit 10\n");
                 return true;
             }
             break;
@@ -255,6 +283,7 @@ bool IsValidMove(int board[][8], int fromX, int fromY, int toX, int toY, int pla
                         x += delta;
                     }
                 }
+                printf("Exit 11\n");
                 return true;
             }
             break;
@@ -273,6 +302,7 @@ bool IsValidMove(int board[][8], int fromX, int fromY, int toX, int toY, int pla
                     x += deltaX;
                     y += deltaY;
                 }
+                printf("Exit 12\n");
                 return true;
             } else if ((fromX == toX && fromY != toY) || (fromX != toX && fromY == toY)) {
                 // Check horizontal or vertical movement
@@ -296,17 +326,19 @@ bool IsValidMove(int board[][8], int fromX, int fromY, int toX, int toY, int pla
                         x += delta;
                     }
                 }
+                printf("Exit 13\n");
                 return true;
             }
             break;
         case WHITEKING:
         case BLACKKING:
             // Kings can move one square in any direction
-            if (abs(toX - fromX) <= 1 && abs(toY - fromY) <= 1)
+            if (abs(toX - fromX) <= 1 && abs(toY - fromY) <= 1){
                 return true;
+            }
             break;
     }
-
+    printf("Exit 14\n");
     return false; // Invalid move by default
 }
 
@@ -323,8 +355,9 @@ bool IsCheck(int board[][8], int player_turn) {
                 break;
             }
         }
-        if (kingX != -1)
+        if (kingX != -1){
             break;
+        }
     }
 
     if (kingX == -1 || kingY == -1) {
@@ -388,7 +421,7 @@ int main () {
     int player_turn = 0; // 0= white, 1 = black
     bool piece_selected = false; 
     int selectedSquare[2]= {-1,-1};
-
+    int highlightMove[4] = {-1,-1,-1,-1};
     /* Main Game Loop */
     while (WindowShouldClose() == false){
 
@@ -403,6 +436,10 @@ int main () {
             if (IsValidMove(myBoard.arr_board, selectedSquare[0], selectedSquare[1], destSquare[0], destSquare[1], player_turn)){
                 myBoard.arr_board[destSquare[1]][destSquare[0]] = myBoard.arr_board[selectedSquare[1]][selectedSquare[0]];
                 myBoard.arr_board[selectedSquare[1]][selectedSquare[0]] = EMPTY;
+                highlightMove[0] = selectedSquare[0];
+                highlightMove[1] = selectedSquare[1];
+                highlightMove[2] = destSquare[0];
+                highlightMove[3] = destSquare[1];
 
                 if (IsCheck(myBoard.arr_board, player_turn)){
                     printf("Checkmate!\n");
@@ -413,12 +450,14 @@ int main () {
             }
             
             piece_selected = false;
+            selectedSquare[0] = -1;
+            selectedSquare[1] = -1;
         }
         BeginDrawing();
         ClearBackground(ChessBackground);
         
         DrawBoard(screenWidth, screenHeight, ChessGreen, ChessBrown);
-        DrawPieces(textures, myBoard.arr_board, screenWidth, screenHeight, source);
+        DrawPieces(textures, myBoard.arr_board, screenWidth, screenHeight, source, selectedSquare, highlightMove);
 
         EndDrawing();
     }
