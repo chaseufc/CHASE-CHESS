@@ -15,7 +15,6 @@ To start playing Chase Chess:
 3. Ensure you have raylib installed on your system.
 4. Press F5 in Visual Studio Code to compile and run the game.
 5. Use the mouse to interact with the game board and make your moves.
-6. Gameplay Instructions
 
 # Contribution
 Contributions to Chase Chess are welcome! If you find any bugs or want to suggest improvements, feel free to open an issue or create a pull request.
